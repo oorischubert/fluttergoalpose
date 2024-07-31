@@ -4,7 +4,7 @@ from geometry_msgs.msg import Pose
 from .flutterComms import FlutterComms
 
 class GoalPublisher(Node):
-    def __init__(self, robot_id):
+    def __init__(self, robot_id, key_path):
         super().__init__('goal_publisher')
         self.publisher_ = self.create_publisher(Pose, 'goal_pose', 10)
         self.subscription = self.create_subscription(
@@ -16,7 +16,7 @@ class GoalPublisher(Node):
         
         timer_period = 3.0  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
-        self.poseGetter = FlutterComms(robot_id)
+        self.poseGetter = FlutterComms(robot_id, key_path)
         self.current_pose = Pose()
 
     def current_pose_callback(self, msg):
@@ -55,12 +55,13 @@ def main(args=None):
     rclpy.init(args=args)
     if args and len(args) > 1:
         robot_id = args[1]
+        key_path = args[2]
     else:
-        print("[goalposer] Error: robot_id not provided. Node will not start.")
+        print("Error: robot_id not provided. Node will not start.")
         rclpy.shutdown()
         return
 
-    node = GoalPublisher(robot_id)
+    node = GoalPublisher(robot_id, key_path)
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

@@ -5,10 +5,16 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     return LaunchDescription([
+
         DeclareLaunchArgument(
             'robot_id',
-            default_value='0',
+            default_value='artro1212',
             description='ID of the robot'
+        ),
+        DeclareLaunchArgument(
+            'key_path',
+            default_value='/Users/oorischubert/turtlebot_ros2/astrom-f99b0-firebase-adminsdk-yjjdd-a50a8d1a33.json',
+            description='Path to the key file'
         ),
         Node(
             package='fluttergoalpose',
@@ -18,7 +24,8 @@ def generate_launch_description():
             parameters=[{
                 'use_sim_time': False  
             }],
-            arguments=[LaunchConfiguration('robot_id')]
+            arguments=[LaunchConfiguration('robot_id'),
+                     LaunchConfiguration('key_path')]
         )
     ])
 
