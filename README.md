@@ -1,6 +1,6 @@
 ## Astrom Hub Package
 
-This package connects to the Astrom Hub, receiving goal pose and sending current_pose. 
+This package connects to the Astrom Hub, receiving goal_pose and sending current_pose. 
 The Hive manager sends out goal poses to the robots, and users can also view/send poses.
 
 ## Install Requirements

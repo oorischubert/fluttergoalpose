@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Pose
+from tf2_msgs.msg import TFMessage
+from geometry_msgs.msg import Pose, PoseStamped
 from .flutterComms import FlutterComms
 
 class GoalPoser(Node):
@@ -19,11 +20,11 @@ class GoalPoser(Node):
             self.get_logger().error('robot_id and key_path must be provided as parameters.')
             return
 
-        self.publisher_ = self.create_publisher(Pose, 'goal_pose', 10)
+        self.publisher_ = self.create_publisher(PoseStamped, 'goal_pose', 10)
         self.subscription = self.create_subscription(
-            Pose,
-            'current_pose',
-            self.current_pose_callback,
+            TFMessage,
+            '/tf',
+            self.tf_callback,
             10)
         self.subscription  # prevent unused variable warning
 
@@ -32,34 +33,46 @@ class GoalPoser(Node):
         self.poseGetter = FlutterComms(robot_id, key_path)
         self.current_pose = Pose()
 
-    def current_pose_callback(self, msg):
-        self.current_pose = msg
-        self.poseGetter.sendCurrentPose({
-            "position": {
-                "x": msg.position.x,
-                "y": msg.position.y,
-                "z": msg.position.z
-            },
-            "orientation": {
-                "x": msg.orientation.x,
-                "y": msg.orientation.y,
-                "z": msg.orientation.z,
-                "w": msg.orientation.w
-            }
-        })
-        #self.get_logger().info('Received current pose: "%s"' % msg)
+    def tf_callback(self, msg):
+        for transform in msg.transforms:
+            if transform.child_frame_id == 'base_link':  # Extract pose for base_link frame
+                self.current_pose.position.x = transform.transform.translation.x
+                self.current_pose.position.y = transform.transform.translation.y
+                self.current_pose.position.z = transform.transform.translation.z
+                self.current_pose.orientation.x = transform.transform.rotation.x
+                self.current_pose.orientation.y = transform.transform.rotation.y
+                self.current_pose.orientation.z = transform.transform.rotation.z
+                self.current_pose.orientation.w = transform.transform.rotation.w
+
+                self.poseGetter.sendCurrentPose({
+                    "position": {
+                        "x": self.current_pose.position.x,
+                        "y": self.current_pose.position.y,
+                        "z": self.current_pose.position.z
+                    },
+                    "orientation": {
+                        "x": self.current_pose.orientation.x,
+                        "y": self.current_pose.orientation.y,
+                        "z": self.current_pose.orientation.z,
+                        "w": self.current_pose.orientation.w
+                    }
+                })
+                #self.get_logger().info('Received current pose: "%s"' % transform)
 
     def timer_callback(self):
-        msg = Pose()
+        msg = PoseStamped()
         flutterMsg = self.poseGetter.getGoalPose()
-        # Set your goal pose here
-        msg.position.x = flutterMsg["position"]["x"]
-        msg.position.y = flutterMsg["position"]["y"]
-        msg.position.z = flutterMsg["position"]["z"]
-        msg.orientation.x = flutterMsg["orientation"]["x"]
-        msg.orientation.y = flutterMsg["orientation"]["y"]
-        msg.orientation.z = flutterMsg["orientation"]["z"]
-        msg.orientation.w = flutterMsg["orientation"]["w"]
+        
+        msg.pose.position.x = flutterMsg["position"]["x"]
+        msg.pose.position.y = flutterMsg["position"]["y"]
+        msg.pose.position.z = flutterMsg["position"]["z"]
+        msg.pose.orientation.x = flutterMsg["orientation"]["x"]
+        msg.pose.orientation.y = flutterMsg["orientation"]["y"]
+        msg.pose.orientation.z = flutterMsg["orientation"]["z"]
+        msg.pose.orientation.w = flutterMsg["orientation"]["w"]
+
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = 'base_link'  # Set appropriate frame_id
 
         self.publisher_.publish(msg)
         #self.get_logger().info('Publishing goal pose: "%s"' % msg)
@@ -78,19 +91,3 @@ def main(args=None):
 if __name__ == '__main__':
     import sys
     main(sys.argv)
-
-#Testing:
-
-# ros2 run fluttergoalpose goalposer --ros-args -p robot_id:=artro1212 -p key_path:=/root/src/astrom-f99b0-firebase-adminsdk-yjjdd-a50a8d1a33.json
-
-# ros2 topic echo /goal_pose
-
-# ros2 topic pub /current_pose geometry_msgs/msg/Pose "{
-#   position: {x: $(python3 -c 'import random; print(random.uniform(-10.0, 10.0))'), 
-#              y: $(python3 -c 'import random; print(random.uniform(-10.0, 10.0))'), 
-#              z: $(python3 -c 'import random; print(random.uniform(-10.0, 10.0))')}, 
-#   orientation: {x: $(python3 -c 'import random; print(random.uniform(-1.0, 1.0))'), 
-#                 y: $(python3 -c 'import random; print(random.uniform(-1.0, 1.0))'), 
-#                 z: $(python3 -c 'import random; print(random.uniform(-1.0, 1.0))'), 
-#                 w: $(python3 -c 'import random; print(random.uniform(-1.0, 1.0))')}
-# }"
