@@ -1,7 +1,7 @@
-## Astrom Hub Node
-```markdown
-This node connects to the Astrom Hub, sending and receiving goal pose data. The Hive manager sends out goal poses to the robots, and users can also view/send poses.
-```
+## Astrom Hub Package
+
+This package connects to the Astrom Hub, receiving goal pose and sending current_pose. 
+The Hive manager sends out goal poses to the robots, and users can also view/send poses.
 
 ## Install Requirements
 
