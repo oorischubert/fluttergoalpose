@@ -2,6 +2,7 @@
 # Astrom Hub Node
 
 This node connects to the Astrom Hub, sending and receiving goal pose data. The Hive manager sends out goal poses to the robots, and users can also view/send poses.
+```
 
 ## Install Requirements
 
@@ -37,5 +38,4 @@ ros2 topic pub /current_pose geometry_msgs/msg/Pose "{
 
 ```bash
 ros2 topic echo /goal_pose
-```
 ```
