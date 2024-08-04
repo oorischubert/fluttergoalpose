@@ -7,6 +7,9 @@ from .flutterComms import FlutterComms
 class GoalPoser(Node):
     def __init__(self):
         super().__init__('goal_publisher')
+        self.previous_pose = PoseStamped()
+        self.firstTick = True
+        self.prevId = ""
         
         # Declare parameters
         self.declare_parameter('robot_id', '')
@@ -27,7 +30,7 @@ class GoalPoser(Node):
             self.tf_callback,
             10)
         self.subscription  # prevent unused variable warning
-
+        
         timer_period = 3.0  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
         self.poseGetter = FlutterComms(robot_id, key_path)
@@ -74,8 +77,24 @@ class GoalPoser(Node):
         msg.header.stamp = self.get_clock().now().to_msg()
         msg.header.frame_id = 'base_link'  # Set appropriate frame_id
 
+        if flutterMsg["id"] == self.prevId:
+            return
+        
+        if self.firstTick:
+            self.prevId = flutterMsg["id"]
+            self.firstTick = False
+            return
+
         self.publisher_.publish(msg)
+        self.prevId = flutterMsg["id"]
+        
         #self.get_logger().info('Publishing goal pose: "%s"' % msg)
+    
+    def checkPoseFreshness(self, current_pose):
+        if self.previous_pose.pose.position.x == current_pose.position.x and self.previous_pose.pose.position.y == current_pose.position.y and not self.firstTick:
+            return False
+        else:
+            return True
 
 def main(args=None):
     rclpy.init(args=args)
