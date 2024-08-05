@@ -26,7 +26,8 @@ class FlutterComms():
                     "y": float(goal_pose['orientation']['y']),
                     "z": float(goal_pose['orientation']['z']),
                     "w": float(goal_pose['orientation']['w'])
-                }
+                },
+                "active": bool(goal_pose['active'])
             }
         else:
             print("No such document!")
